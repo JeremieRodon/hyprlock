@@ -23,6 +23,7 @@ class CFingerprint : public IAuthImplementation {
     virtual void                        terminate();
 
     void                                onActivity();
+    void                                onInactivityTimeout();
 
     std::shared_ptr<sdbus::IConnection> getConnection();
 
@@ -56,6 +57,5 @@ class CFingerprint : public IAuthImplementation {
     bool        stopVerify();
     bool        releaseDevice();
 
-    void        onInactivityTimeout();
     void        setupInactivityTimer();
 };

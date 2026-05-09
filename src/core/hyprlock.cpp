@@ -644,6 +644,8 @@ void CHyprlock::onKey(uint32_t key, bool down) {
         xkb_compose_state_reset(g_pSeatManager->m_pXKBComposeState);
 
     renderAllOutputs();
+
+    notifyActivityToFingerprint();
 }
 
 void CHyprlock::handleKeySym(xkb_keysym_t sym, bool composed) {
@@ -696,12 +698,7 @@ void CHyprlock::onClick(uint32_t button, bool down, const Vector2D& pos) {
     if (!m_focusedOutput->m_sessionLockSurface)
         return;
 
-    if (g_pAuth) {
-        auto fpImpl = g_pAuth->getImpl(AUTH_IMPL_FINGERPRINT);
-        if (fpImpl) {
-            ((CFingerprint*)fpImpl.get())->onActivity();
-        }
-    }
+    notifyActivityToFingerprint();
 
     const auto SCALEDPOS = pos * m_focusedOutput->m_sessionLockSurface->fractionalScale;
     const auto widgets   = g_pRenderer->getOrCreateWidgetsFor(*m_focusedOutput->m_sessionLockSurface);
@@ -748,15 +745,6 @@ void CHyprlock::onHover(const Vector2D& pos) {
 
     if (outputNeedsRedraw)
         m_focusedOutput->m_sessionLockSurface->render();
-}
-
-void CHyprlock::onMouseMove(const Vector2D& pos) {
-    if (g_pAuth) {
-        auto fpImpl = g_pAuth->getImpl(AUTH_IMPL_FINGERPRINT);
-        if (fpImpl) {
-            ((CFingerprint*)fpImpl.get())->onActivity();
-        }
-    }
 }
 
 bool CHyprlock::acquireSessionLock() {
@@ -929,6 +917,15 @@ void CHyprlock::enqueueForceUpdateTimers() {
             }
         },
         nullptr, false);
+}
+
+void CHyprlock::notifyActivityToFingerprint() {
+    if (!g_pAuth)
+        return;
+    auto fpImpl = g_pAuth->getImpl(AUTH_IMPL_FINGERPRINT);
+    if (!fpImpl)
+        return;
+    ((CFingerprint*)fpImpl.get())->onActivity();
 }
 
 SP<CCZwlrScreencopyManagerV1> CHyprlock::getScreencopy() {

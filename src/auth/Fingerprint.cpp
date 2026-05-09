@@ -107,6 +107,15 @@ void CFingerprint::terminate() {
         releaseDevice();
 }
 
+static void inactivityTimerCallback(ASP<CTimer> self, void* data) {
+    if (!g_pAuth)
+        return;
+    auto fpImpl = g_pAuth->getImpl(AUTH_IMPL_FINGERPRINT);
+    if (!fpImpl)
+        return;
+    ((CFingerprint*)fpImpl.get())->onInactivityTimeout();
+}
+
 void CFingerprint::setupInactivityTimer() {
     if (m_sInactiveTimeout <= 0 || m_sDBUSState.abort || m_sDBUSState.done)
         return;
@@ -116,11 +125,12 @@ void CFingerprint::setupInactivityTimer() {
         m_pInactivityTimer.reset();
     }
 
-    m_pInactivityTimer = g_pHyprlock->addTimer(std::chrono::milliseconds(m_sInactiveTimeout * 1000),
-                                                   [](ASP<CTimer> self, void* data) { ((CFingerprint*)data)->onInactivityTimeout(); }, this);
+    m_pInactivityTimer = g_pHyprlock->addTimer(std::chrono::seconds(m_sInactiveTimeout), inactivityTimerCallback, nullptr);
 }
 
 void CFingerprint::onActivity() {
+    setupInactivityTimer();
+
     if (!m_sDBUSState.verifying) {
         Debug::log(LOG, "fprint: activity detected, resuming verification");
         startVerify();
@@ -132,9 +142,7 @@ void CFingerprint::onInactivityTimeout() {
         return;
 
     Debug::log(LOG, "fprint: inactivity timeout, pausing verification");
-
     stopVerify();
-
     releaseDevice();
 
     m_sDBUSState.device.reset();
@@ -143,6 +151,7 @@ void CFingerprint::onInactivityTimeout() {
     m_sPrompt = "";
     g_pHyprlock->enqueueForceUpdateTimers();
 
+    m_pInactivityTimer->cancel();
     m_pInactivityTimer.reset();
 }
 
