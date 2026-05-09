@@ -132,7 +132,7 @@ void CFingerprint::onActivity() {
     setupInactivityTimer();
 
     if (!m_sDBUSState.verifying) {
-        Debug::log(LOG, "fprint: activity detected, resuming verification");
+        Log::logger->log(Log::INFO, "fprint: activity detected, resuming verification");
         startVerify();
     }
 }
@@ -141,7 +141,7 @@ void CFingerprint::onInactivityTimeout() {
     if (m_sDBUSState.abort || m_sDBUSState.done || !m_sDBUSState.verifying)
         return;
 
-    Debug::log(LOG, "fprint: inactivity timeout, pausing verification");
+    Log::logger->log(Log::INFO, "fprint: inactivity timeout, pausing verification");
     stopVerify();
     releaseDevice();
 
