@@ -41,7 +41,7 @@ CFingerprint::CFingerprint() {
     static const auto FINGERPRINTPRESENT = g_pConfigManager->getValue<Hyprlang::STRING>("auth:fingerprint:present_message");
     m_sFingerprintPresent                = *FINGERPRINTPRESENT;
     static const auto INACTIVETIMEOUT    = g_pConfigManager->getValue<Hyprlang::INT>("auth:fingerprint:inactive_timeout");
-    m_sInactiveTimeout = *INACTIVETIMEOUT;
+    m_sInactiveTimeout                   = *INACTIVETIMEOUT;
 }
 
 CFingerprint::~CFingerprint() {

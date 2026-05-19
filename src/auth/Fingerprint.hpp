@@ -42,12 +42,12 @@ class CFingerprint : public IAuthImplementation {
 
     std::string m_sFingerprintReady;
     std::string m_sFingerprintPresent;
-    int m_sInactiveTimeout;
+    int         m_sInactiveTimeout;
 
     std::string m_sPrompt{""};
     std::string m_sFailureReason{""};
 
-    ASP<CTimer>                           m_pInactivityTimer;
+    ASP<CTimer> m_pInactivityTimer;
 
     void        handleVerifyStatus(const std::string& result, const bool done);
 
