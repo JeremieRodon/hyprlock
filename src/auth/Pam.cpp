@@ -49,8 +49,8 @@ int conv(int num_msg, const struct pam_message** msg, struct pam_response** resp
                     CONVERSATIONSTATE->waitForInput();
                 }
 
-                // Needed for unlocks via SIGUSR1
-                if (CONVERSATIONSTATE->terminateRequested || g_pHyprlock->isFadingOutOrTerminating())
+                // Needed for unlocks via SIGUSR1, or inactivity-triggered restart
+                if (CONVERSATIONSTATE->terminateRequested || g_pHyprlock->isFadingOutOrTerminating() || CONVERSATIONSTATE->restartRequested)
                     return abortConversation();
 
                 pamReply[i].resp = strdup(CONVERSATIONSTATE->input.c_str());
@@ -160,13 +160,18 @@ void CPam::waitForInput() {
     m_bBlockInput                          = false;
     m_sConversationState.waitingForPamAuth = false;
     m_sConversationState.inputRequested    = true;
-    m_sConversationState.inputSubmittedCondition.wait(
-        lk, [this] { return !m_sConversationState.inputRequested || m_sConversationState.terminateRequested || g_pHyprlock->isFadingOutOrTerminating(); });
+    m_sConversationState.inputSubmittedCondition.wait(lk, [this] {
+        return !m_sConversationState.inputRequested || m_sConversationState.terminateRequested || m_sConversationState.restartRequested ||
+            g_pHyprlock->isFadingOutOrTerminating();
+    });
     m_bBlockInput = true;
 }
 
 void CPam::handleInput(const std::string& input) {
     std::unique_lock<std::mutex> lk(m_sConversationState.inputMutex);
+
+    if (m_sConversationState.restartRequested || m_sConversationState.terminateRequested)
+        return;
 
     if (!m_sConversationState.inputRequested)
         Log::logger->log(Log::ERR, "SubmitInput called, but the auth thread is not waiting for input!");
@@ -201,9 +206,18 @@ void CPam::terminate() {
 }
 
 void CPam::resetConversation() {
-    m_sConversationState.input             = "";
-    m_sConversationState.waitingForPamAuth = false;
-    m_sConversationState.inputRequested    = false;
-    m_sConversationState.failTextFromPam   = false;
-    m_bBlockInput                          = false;
+    m_sConversationState.input               = "";
+    m_sConversationState.waitingForPamAuth   = false;
+    m_sConversationState.inputRequested      = false;
+    m_sConversationState.failTextFromPam     = false;
+    m_sConversationState.restartRequested    = false;
+    m_bBlockInput                            = false;
+}
+
+void CPam::restartAuth() {
+    std::lock_guard<std::mutex> lg(m_sConversationState.inputMutex);
+
+    m_sConversationState.input            = "";
+    m_sConversationState.restartRequested = true;
+    m_sConversationState.inputSubmittedCondition.notify_all();
 }

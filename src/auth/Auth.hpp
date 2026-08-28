@@ -22,6 +22,7 @@ class IAuthImplementation {
     virtual std::optional<std::string> getLastFailText()                     = 0;
     virtual std::optional<std::string> getLastPrompt()                       = 0;
     virtual void                       terminate()                           = 0;
+    virtual void                       restartAuth()                         {}
 
     friend class CAuth;
 };
@@ -34,6 +35,7 @@ class CAuth {
 
     void                       submitInput(const std::string& input);
     bool                       checkWaiting();
+    void                       restartAuth();
 
     const std::string&         getCurrentFailText();
 

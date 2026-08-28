@@ -33,6 +33,7 @@ void CSeatManager::registerSeat(SP<CCWlSeat> seat) {
             static const auto HIDECURSOR = g_pConfigManager->getValue<Hyprlang::INT>("general:hide_cursor");
             m_pPointer->setMotion([](CCWlPointer* r, uint32_t time, wl_fixed_t surface_x, wl_fixed_t surface_y) {
                 g_pHyprlock->m_vMouseLocation = {wl_fixed_to_double(surface_x), wl_fixed_to_double(surface_y)};
+                g_pHyprlock->onActivity();
 
                 if (!*HIDECURSOR)
                     g_pHyprlock->onHover(g_pHyprlock->m_vMouseLocation);

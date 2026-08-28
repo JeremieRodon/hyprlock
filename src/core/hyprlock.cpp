@@ -76,8 +76,7 @@ CHyprlock::CHyprlock(std::string_view wlDisplay, const bool immediateRender, con
     const auto SZCURRENTD     = std::string{CURRENTDESKTOP ? CURRENTDESKTOP : ""};
     m_sCurrentDesktop         = SZCURRENTD;
 
-    static const auto ENABLEFINGERPRINT = g_pConfigManager->getValue<Hyprlang::INT>("auth:fingerprint:enabled");
-    g_dbus                              = makeUnique<CDbus>(*ENABLEFINGERPRINT);
+    g_dbus = makeUnique<CDbus>(true);
 }
 
 CHyprlock::~CHyprlock() {
@@ -610,6 +609,9 @@ void CHyprlock::onKey(uint32_t key, bool down) {
         return;
     }
 
+    if (down)
+        onActivity();
+
     if (down && std::ranges::find(m_vPressedKeys, key) != m_vPressedKeys.end()) {
         Log::logger->log(Log::ERR, "Invalid key down event (key already pressed?)");
         return;
@@ -813,6 +815,7 @@ void CHyprlock::releaseSessionLock() {
 
     Log::logger->log(Log::INFO, "Unlocked, exiting!");
 
+    g_dbus->setLockedHint(false);
     m_bTerminate        = true;
     m_sLockState.locked = false;
 
@@ -823,6 +826,35 @@ void CHyprlock::onLockLocked() {
     Log::logger->log(Log::INFO, "onLockLocked called");
 
     m_sLockState.locked = true;
+    g_dbus->setLockedHint(true);
+    armInactivityTimer();
+}
+
+void CHyprlock::armInactivityTimer() {
+    static const auto REAUTH_TIMEOUT = g_pConfigManager->getValue<Hyprlang::INT>("auth:pam:restart_after_inactivity");
+    if (*REAUTH_TIMEOUT <= 0)
+        return;
+
+    if (m_pInactivityTimer)
+        m_pInactivityTimer->cancel();
+
+    m_pInactivityTimer = addTimer(std::chrono::milliseconds(*REAUTH_TIMEOUT), [this](ASP<CTimer> self, void* data) {
+        Log::logger->log(Log::INFO, "Inactivity timeout reached");
+        this->m_isInactive = true;
+    }, nullptr);
+}
+
+void CHyprlock::onActivity() {
+    if (!m_sLockState.locked || isFadingOutOrTerminating())
+        return;
+
+    // Re-arm the inactivity timer on every activity event
+    armInactivityTimer();
+
+    // If inactivity, restart it now
+    if (m_isInactive)
+        g_pAuth->restartAuth();
+    m_isInactive = false;
 }
 
 void CHyprlock::onLockFinished() {

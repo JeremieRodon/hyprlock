@@ -37,6 +37,11 @@ bool CAuth::checkWaiting() {
     return std::ranges::any_of(m_vImpls, [](const auto& i) { return i->checkWaiting(); });
 }
 
+void CAuth::restartAuth() {
+    for (const auto& i : m_vImpls)
+        i->restartAuth();
+}
+
 const std::string& CAuth::getCurrentFailText() {
     return m_sCurrentFail.failText;
 }

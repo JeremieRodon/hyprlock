@@ -53,6 +53,8 @@ class CHyprlock {
     void                       onKey(uint32_t key, bool down);
     void                       onClick(uint32_t button, bool down, const Vector2D& pos);
     void                       onHover(const Vector2D& pos);
+    void                       onActivity();
+    void                       armInactivityTimer();
     void                       startKeyRepeat(xkb_keysym_t sym);
     void                       repeatKey(xkb_keysym_t sym);
     void                       handleKeySym(xkb_keysym_t sym, bool compose);
@@ -88,6 +90,10 @@ class CHyprlock {
     bool                             m_bImmediateRender   = false;
     bool                             m_screencopyRequired = false;
 
+    // Main-loop-thread-only: written by inactivity timer callback and onActivity(),
+    // both of which run on the main loop thread. Must not be accessed from the PAM auth thread.
+    bool                             m_isInactive = false;
+
     std::string                      m_sCurrentDesktop = "";
 
     //
@@ -97,7 +103,8 @@ class CHyprlock {
 
     Vector2D                              m_vMouseLocation = {};
 
-    ASP<CTimer>                           m_pKeyRepeatTimer = nullptr;
+    ASP<CTimer>                           m_pKeyRepeatTimer    = nullptr;
+    ASP<CTimer>                           m_pInactivityTimer   = nullptr; // main-loop-thread-only, see m_isInactive
 
     std::vector<SP<COutput>>              m_vOutputs;
     std::vector<ASP<CTimer>>              getTimers();
