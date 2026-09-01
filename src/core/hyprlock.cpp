@@ -676,6 +676,7 @@ void CHyprlock::handleKeySym(xkb_keysym_t sym, bool composed) {
 
         if (m_sPasswordState.passBuffer.empty() && *IGNOREEMPTY) {
             Log::logger->log(Log::INFO, "Ignoring empty input");
+            g_pAuth->restartAuth();
             return;
         }
 
