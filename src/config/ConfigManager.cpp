@@ -250,7 +250,7 @@ void CConfigManager::init() {
 
     m_config.addConfigValue("auth:pam:enabled", Hyprlang::INT{1});
     m_config.addConfigValue("auth:pam:module", Hyprlang::STRING{"hyprlock"});
-    m_config.addConfigValue("auth:pam:restart_after_inactivity", Hyprlang::INT{15000});
+    m_config.addConfigValue("auth:pam:restart_after_inactivity", Hyprlang::INT{10000});
     m_config.addConfigValue("auth:fingerprint:enabled", Hyprlang::INT{0});
     m_config.addConfigValue("auth:fingerprint:ready_message", Hyprlang::STRING{"(Scan fingerprint to unlock)"});
     m_config.addConfigValue("auth:fingerprint:present_message", Hyprlang::STRING{"Scanning fingerprint"});
